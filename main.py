@@ -116,7 +116,7 @@ def train(cfg: DictConfig):
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     # Setup training kwargs
-    trainer_kwargs = OmegaConf.to_container(cfg.training, resolve=True)
+    trainer_kwargs = OmegaConf.to_container(cfg.training.training, resolve=True)
     
     # Setup callbacks
     callbacks = [
@@ -132,7 +132,7 @@ def train(cfg: DictConfig):
         EarlyStopping(
             monitor="val_loss",
             mode="min",
-            patience=cfg.training.early_stopping_patience,
+            patience=cfg.training.training.patience,
             verbose=True
         ),
     ]

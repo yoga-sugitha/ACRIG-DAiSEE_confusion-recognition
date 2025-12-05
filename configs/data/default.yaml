@@ -1,0 +1,7 @@
+data_dir: "/kaggle/input/daisee-dataset-normal-scenario-only-multi-class"        # or your path
+batch_size: 32
+num_workers: 0
+img_size: 224
+seed: 42
+task_type: "multiclass"          # or "binary"
+binary_mapping: "c0_vs_rest"     # only used if task_type == binary

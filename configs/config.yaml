@@ -1,0 +1,10 @@
+# configs/config.yaml
+defaults:
+  - data: default
+  - model: effnetb0
+  - optimizer: adam
+  - training: default
+  - logging: wandb_offline
+  - experiment: default
+  - xai: default
+  - _self_

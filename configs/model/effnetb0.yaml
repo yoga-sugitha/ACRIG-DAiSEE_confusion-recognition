@@ -1,0 +1,4 @@
+# EfficientNetB0
+name: "effnetb0"                 
+pretrained: true
+dropout: 0.2

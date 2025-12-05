@@ -1,4 +1,4 @@
-data_dir: "/kaggle/input/daisee-dataset-normal-scenario-only-multi-class"        # or your path
+data_dir: "/kaggle/input/daisee-dataset-normal-scenario-only-multi-class/DAiSEE_confusion_normal_only"        # or your path
 batch_size: 32
 num_workers: 0
 img_size: 224

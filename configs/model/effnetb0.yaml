@@ -1,4 +1,6 @@
 # EfficientNetB0
-name: "effnetb0"                 
-pretrained: true
-dropout: 0.2
+model:
+  name: "effnetb0"
+  hparams:                 
+    pretrained: true
+    dropout: 0.2

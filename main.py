@@ -93,7 +93,7 @@ def train(cfg: DictConfig):
     print(f"✓ Class Names: {class_names}\n")
 
     # Prepare model hyperparameters (override num_classes from data)
-    model_hparams = OmegaConf.to_container(cfg.model, resolve=True)
+    model_hparams = OmegaConf.to_container(cfg.model.hparams, resolve=True)
     model_hparams['num_classes'] = num_classes
 
     # Prepare optimizer hyperparameters

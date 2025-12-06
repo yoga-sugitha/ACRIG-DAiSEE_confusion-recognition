@@ -68,20 +68,18 @@ def train(cfg: DictConfig):
     # set seed
     L.seed_everything(cfg.experiment.seed)
 
-    experiment_name = f"{cfg.model.name}_{cfg.experiment.dataset_name}_{cfg.data.task_type}_{cfg.optimizer.name}_{cfg.experiment.seed}_{cfg.experiment.id}"
+    experiment_name = f"{cfg.model.name}_{cfg.data.name}_{cfg.data.task_type}_{cfg.optimizer.name}_{cfg.experiment.seed}_{cfg.experiment.id}"
     print(f"Starting Experiment: {experiment_name}\n")
     logger = setup_logger(cfg, experiment_name)
 
     # setup datamodule
     # Note: There is no val split, because the data has been split in 3 hold-out
+    data_hparams = OmegaConf.to_container(cfg.data.hparams, resolve=True)
+
     data_module = DAiSEEDataModule(
-        data_dir=cfg.data.data_dir,
-        batch_size=cfg.data.batch_size,
-        num_workers=cfg.data.num_workers,
-        img_size=cfg.data.img_size,
-        seed=cfg.data.seed if hasattr(cfg.data, 'seed') else cfg.experiment.seed,
-        task_type=cfg.data.task_type,
+        seed=cfg.experiment.seed,
         binary_mapping=cfg.data.binary_mapping if hasattr(cfg.data, 'binary_mapping') else 'c0_vs_rest',
+        **data_hparams
     )
 
     # setup data to get actual num_classes and class_names
@@ -89,7 +87,7 @@ def train(cfg: DictConfig):
     num_classes = data_module.num_classes
     class_names = data_module.class_names
 
-    print(f"\n✓ Task Type: {cfg.data.task_type}")
+    print(f"\n✓ Task Type: {cfg.data.hparams.task_type}")
     print(f"✓ Number of Classes: {num_classes}")
     print(f"✓ Class Names: {class_names}\n")
 
@@ -197,7 +195,7 @@ def train(cfg: DictConfig):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     complexity_metrics = compute_model_complexity(
         best_model.model.to(device),
-        input_size=(3, cfg.data.img_size, cfg.data.img_size)
+        input_size=(3, cfg.data.hparams.img_size, cfg.data.hparams.img_size)
     )
     
     # Measure inference latency

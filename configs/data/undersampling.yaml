@@ -1,7 +1,10 @@
-data_dir: "/kaggle/input/daisee-multi-class-3-scenarios-dataset/DAiSEE_confusion_undersampling"
-batch_size: 32
-num_workers: 4
-img_size: 224
-seed: 42
-task_type: "multiclass"
+name: "daisee-undersampling"
+hparams:
+  data_dir: "/kaggle/input/daisee-multi-class-3-scenarios-dataset/DAiSEE_confusion_undersampling"
+  batch_size: 32
+  num_workers: 4
+  img_size: 224
+  seed: 42
+  task_type: "multiclass"
+
 binary_mapping: "c0_vs_rest"

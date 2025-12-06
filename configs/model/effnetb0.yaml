@@ -1,5 +1,4 @@
 # EfficientNetB0
-model:
-  name: "effnetb0"
-  hparams:                 
-    dropout: 0.2
+name: "effnetb0"
+hparams:                 
+  dropout: 0.2

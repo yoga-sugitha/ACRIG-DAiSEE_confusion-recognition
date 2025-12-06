@@ -1,3 +1,4 @@
 *.pyc
 conf_test.py
 conf_test.log
+outputs/

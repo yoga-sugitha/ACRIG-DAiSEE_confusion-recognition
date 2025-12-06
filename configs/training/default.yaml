@@ -1,4 +1,4 @@
-training:
+trainer:
   accelerator: "auto"             # good — uses GPU if available
   devices: "auto"                 # good — picks 1 GPU or CPU
   max_epochs: 1                   # minimal training

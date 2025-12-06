@@ -68,7 +68,7 @@ def train(cfg: DictConfig):
     # set seed
     L.seed_everything(cfg.experiment.seed)
 
-    experiment_name = f"{cfg.model.model.name}_{cfg.experiment.dataset_name}_{cfg.data.task_type}_{cfg.optimizer.name}_{cfg.experiment.seed}_{cfg.experiment.id}"
+    experiment_name = f"{cfg.model.name}_{cfg.experiment.dataset_name}_{cfg.data.task_type}_{cfg.optimizer.name}_{cfg.experiment.seed}_{cfg.experiment.id}"
     print(f"Starting Experiment: {experiment_name}\n")
     logger = setup_logger(cfg, experiment_name)
 
@@ -94,18 +94,15 @@ def train(cfg: DictConfig):
     print(f"✓ Class Names: {class_names}\n")
 
     # Prepare model hyperparameters (override num_classes from data)
-    model_hparams = OmegaConf.to_container(cfg.model.model.hparams, resolve=True)
+    model_hparams = OmegaConf.to_container(cfg.model.hparams, resolve=True)
     model_hparams['num_classes'] = num_classes
 
     # Prepare optimizer hyperparameters
-    optimizer_hparams = {
-        "lr": cfg.optimizer.lr,
-        "weight_decay": cfg.optimizer.weight_decay,
-    }
+    optimizer_hparams = OmegaConf.to_container(cfg.optimizer.hparams, resolve=True)
     
     # Initialize model
     model = LightningModule(
-        model_name=cfg.model.model.name,
+        model_name=cfg.model.name,
         model_hparams=model_hparams,
         optimizer_name=cfg.optimizer.name,
         optimizer_hparams=optimizer_hparams,
@@ -117,7 +114,7 @@ def train(cfg: DictConfig):
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     # Setup training kwargs
-    trainer_kwargs = OmegaConf.to_container(cfg.training.training, resolve=True)
+    trainer_kwargs = OmegaConf.to_container(cfg.training.trainer, resolve=True)
     
     # Setup callbacks
     callbacks = [
@@ -160,7 +157,7 @@ def train(cfg: DictConfig):
     print("="*70)
     best_model = LightningModule.load_from_checkpoint(
         trainer.checkpoint_callback.best_model_path,
-        model_name=cfg.model.model.name,
+        model_name=cfg.model.name,
         model_hparams=model_hparams,
         optimizer_name=cfg.optimizer.name,
         optimizer_hparams=optimizer_hparams,
@@ -186,7 +183,7 @@ def train(cfg: DictConfig):
     print(f"{'='*70}\n")
     
     test_trainer = L.Trainer(
-        accelerator=cfg.training.training.accelerator,
+        accelerator=cfg.training.trainer.accelerator,
         devices=1,  # ← SINGLE GPU for testing
         logger=logger,
     )
@@ -262,7 +259,7 @@ def train(cfg: DictConfig):
     print("EXPERIMENT SUMMARY")
     print(f"{'='*70}")
     print(f"Experiment:        {experiment_name}")
-    print(f"Model:             {cfg.model.model.name}")
+    print(f"Model:             {cfg.model.name}")
     print(f"Optimizer:         {cfg.optimizer.name}")
     print(f"Test Accuracy:     {test_result.get('test_acc', 0.0):.4f}")
     print(f"Test Precision:    {test_result.get('test_precision', 0.0):.4f}")

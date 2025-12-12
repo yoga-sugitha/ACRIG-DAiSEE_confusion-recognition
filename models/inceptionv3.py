@@ -5,7 +5,7 @@ class InceptionV3(nn.Module):
     def __init__(self, num_classes=2, c_t=512, act_fn=nn.ReLU, dropout=0.2):
         super().__init__()
         # Load pretrained InceptionV3
-        self.backbone = models.inception_v3(weights='DEFAULT', aux_logits=False)
+        self.backbone = models.inception_v3(weights='DEFAULT')
         # Replace the fully connected layer with Identity to extract features
         self.backbone.fc = nn.Identity()
         

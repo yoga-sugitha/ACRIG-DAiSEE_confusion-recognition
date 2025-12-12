@@ -1,0 +1,4 @@
+name: inceptionv3
+hparams:
+  c_t: 512,
+  dropout: 0.2

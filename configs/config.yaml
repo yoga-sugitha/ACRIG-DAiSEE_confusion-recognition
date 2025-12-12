@@ -3,8 +3,11 @@ defaults:
   - data: default
   - model: effnetb0
   - optimizer: adam
+  - scheduler: reducelronplateau
   - training: default
   - logging: wandb_offline
   - experiment: default
   - xai: default
   - _self_
+
+train_seed: 42

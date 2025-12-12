@@ -1,4 +1,4 @@
-name: "daisee-default"
+name: "default"
 hparams:
   data_dir: "/kaggle/input/daisee-dataset-normal-scenario-only-multi-class/DAiSEE_confusion_normal_only"        # or your path
   batch_size: 32

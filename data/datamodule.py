@@ -7,23 +7,8 @@ from torch.utils.data import DataLoader
 from torchvision import transforms as T
 from pathlib import Path
 from .dataset import ImagePathDataset
-
+# FIXME: issue with nonetype
 class DAiSEEDataModule(L.LightningDataModule):
-    """
-    Lightning DataModule for DAiSEE Confusion Detection
-    Works with pre-split Train/Validation/Test directories
-    Supports binary (confused vs not_confused) and multi-class (4 levels)
-    
-    Args:
-        data_dir: Path to dataset root (contains Train/Validation/Test folders)
-        batch_size: Batch size for dataloaders
-        num_workers: Number of worker processes
-        img_size: Image size for resizing
-        seed: Random seed (kept for compatibility)
-        task_type: 'binary' or 'multiclass'
-        binary_mapping: 'c0_vs_rest' (not_confused=0, others=1) or 'custom'
-        binary_class_map: Custom mapping dict (optional)
-    """
     def __init__(
         self, 
         data_dir: str,

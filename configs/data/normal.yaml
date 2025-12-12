@@ -1,4 +1,4 @@
-name: "daisee-normal"
+name: "normal"
 hparams:
   data_dir: "/kaggle/input/daisee-multi-class-3-scenarios-dataset/DAiSEE_confusion_normal"
   batch_size: 32

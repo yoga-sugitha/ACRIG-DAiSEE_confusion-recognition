@@ -1,4 +1,4 @@
-name: "daisee-undersampling"
+name: "undersampling"
 hparams:
   data_dir: "/kaggle/input/daisee-multi-class-3-scenarios-dataset/DAiSEE_confusion_undersampling"
   batch_size: 32

@@ -1,14 +1,30 @@
 """
 Lightning DataModule for DAiSEE dataset
 Supports both binary and multi-class classification with pre-split data
+Simplified version without complex binary mapping logic
 """
 import lightning as L
 from torch.utils.data import DataLoader
 from torchvision import transforms as T
 from pathlib import Path
 from .dataset import ImagePathDataset
-# FIXME: issue with nonetype
+from PIL import Image
+
+
+
 class DAiSEEDataModule(L.LightningDataModule):
+    """
+    Lightning DataModule for DAiSEE Confusion Detection
+    Supports both binary (not confused vs confused) and multi-class (4 levels) classification
+    
+    Args:
+        data_dir: Path to dataset root directory containing Train/Validation/Test folders
+        batch_size: Batch size for dataloaders
+        num_workers: Number of worker processes for data loading
+        img_size: Image size for resizing
+        seed: Random seed for reproducibility
+        task_type: Classification type - 'binary' or 'multiclass'
+    """
     def __init__(
         self, 
         data_dir: str,
@@ -17,8 +33,6 @@ class DAiSEEDataModule(L.LightningDataModule):
         img_size: int = 224,
         seed: int = 42,
         task_type: str = 'multiclass',
-        binary_mapping: str = 'c0_vs_rest',
-        binary_class_map: dict = None,
     ):
         super().__init__()
         self.data_dir = Path(data_dir)
@@ -27,19 +41,17 @@ class DAiSEEDataModule(L.LightningDataModule):
         self.img_size = img_size
         self.seed = seed
         self.task_type = task_type.lower()
-        self.binary_mapping = binary_mapping
-        self.binary_class_map = binary_class_map
         
-        # Set num_classes and class_names
+        # Validate task type
+        if self.task_type not in ['binary', 'multiclass']:
+            raise ValueError(f"task_type must be 'binary' or 'multiclass', got '{task_type}'")
+        
+        # Set num_classes and class_names immediately
         self.num_classes = 2 if self.task_type == 'binary' else 4
         self.class_names = (
             ['Not Confused', 'Confused'] if self.task_type == 'binary' else
             ['Not Confused', 'Slightly Confused', 'Confused', 'Very Confused']
         )
-        
-        # Validate task type
-        if self.task_type not in ['binary', 'multiclass']:
-            raise ValueError(f"task_type must be 'binary' or 'multiclass', got '{task_type}'")
         
         # Verify directories exist
         self.train_dir = self.data_dir / "Train"
@@ -50,7 +62,7 @@ class DAiSEEDataModule(L.LightningDataModule):
             if not split_dir.exists():
                 raise ValueError(f"Directory not found: {split_dir}")
         
-        # Define transforms (your existing pipeline)
+        # Define transforms
         self.test_transform = T.Compose([
             T.Resize((img_size, img_size)),
             T.ToTensor(),
@@ -82,59 +94,78 @@ class DAiSEEDataModule(L.LightningDataModule):
     def setup(self, stage=None):
         """
         Setup datasets from pre-split directories
-        Converts to binary labels if needed
+        Converts to binary labels if needed (class 0 vs rest)
         """
+        # Only create splits once
+        if not hasattr(self, '_splits_created'):
+            # Load train split
+            train_paths, train_labels = self._load_split(self.train_dir)
+            self._train_paths = train_paths
+            self._train_labels = train_labels
+            
+            # Load validation split
+            val_paths, val_labels = self._load_split(self.val_dir)
+            self._val_paths = val_paths
+            self._val_labels = val_labels
+            
+            # Load test split
+            test_paths, test_labels = self._load_split(self.test_dir)
+            self._test_paths = test_paths
+            self._test_labels = test_labels
+            
+            self._splits_created = True
+            
+            # Print summary
+            print(f"\n✓ Loaded DAiSEE dataset ({self.task_type} classification)")
+            print(f"  Training: {len(self._train_paths)} samples")
+            print(f"  Validation: {len(self._val_paths)} samples")
+            print(f"  Test: {len(self._test_paths)} samples")
+            
+            if self.task_type == 'binary':
+                print(f"\n  Binary distribution:")
+                print(f"    Train - Class 0: {self._train_labels.count(0)}, Class 1: {self._train_labels.count(1)}")
+                print(f"    Val   - Class 0: {self._val_labels.count(0)}, Class 1: {self._val_labels.count(1)}")
+                print(f"    Test  - Class 0: {self._test_labels.count(0)}, Class 1: {self._test_labels.count(1)}")
+        
+        # Create datasets based on stage
         if stage == "fit" or stage is None:
             if self.train_dataset is None:
-                train_paths, train_labels = self._load_split(self.train_dir)
                 self.train_dataset = ImagePathDataset(
-                    train_paths, 
-                    train_labels, 
+                    self._train_paths, 
+                    self._train_labels, 
                     transform=self.train_transform
                 )
-                print(f"\n✓ Loaded training set: {len(self.train_dataset)} samples")
-                
             if self.val_dataset is None:
-                val_paths, val_labels = self._load_split(self.val_dir)
                 self.val_dataset = ImagePathDataset(
-                    val_paths, 
-                    val_labels, 
+                    self._val_paths, 
+                    self._val_labels, 
                     transform=self.test_transform
                 )
-                print(f"✓ Loaded validation set: {len(self.val_dataset)} samples")
-                
-                if self.task_type == 'binary':
-                    print(f"  Binary distribution - Class 0: {val_labels.count(0)}, Class 1: {val_labels.count(1)}")
         
         if stage == "test" or stage is None:
             if self.test_dataset is None:
-                test_paths, test_labels = self._load_split(self.test_dir)
-                self._test_paths = test_paths
-                self._test_labels = test_labels
                 self.test_dataset = ImagePathDataset(
-                    test_paths, 
-                    test_labels, 
+                    self._test_paths, 
+                    self._test_labels, 
                     transform=self.test_transform
                 )
-                print(f"✓ Loaded test set: {len(self.test_dataset)} samples")
-                
-                if self.task_type == 'binary':
-                    print(f"  Binary distribution - Class 0: {test_labels.count(0)}, Class 1: {test_labels.count(1)}")
     
     def _load_split(self, split_dir: Path):
         """
         Load paths and labels from a split directory
         Handles conversion to binary labels if needed
         
+        Args:
+            split_dir: Path to split directory (Train/Validation/Test)
+            
         Returns:
             paths: List of image paths
-            labels: List of labels (converted to binary if needed)
+            labels: List of labels (converted to binary if task_type='binary')
         """
         paths = []
         labels = []
         
         # Mapping from folder name to class index
-        # Folders: 0_not_confused, 1_slightly_confused, 2_confused, 3_very_confused
         folder_to_class = {
             '0_not_confused': 0,
             '1_slightly_confused': 1,
@@ -148,13 +179,15 @@ class DAiSEEDataModule(L.LightningDataModule):
             if not folder_path.exists():
                 continue
                 
-            for img_path in folder_path.glob('*.jpg'):  # adjust extension if needed
+            for img_path in folder_path.glob('*.jpg'):
                 paths.append(str(img_path))
-                labels.append(class_idx)
-        
-        # Convert to binary if needed
-        if self.task_type == 'binary':
-            labels = self._convert_to_binary(labels)
+                
+                # Convert to binary if needed: class 0 stays 0, rest become 1
+                if self.task_type == 'binary':
+                    binary_label = 0 if class_idx == 0 else 1
+                    labels.append(binary_label)
+                else:
+                    labels.append(class_idx)
         
         return paths, labels
     
@@ -172,7 +205,6 @@ class DAiSEEDataModule(L.LightningDataModule):
             (image: torch.Tensor in [C, H, W], label: int)
         """
         if not hasattr(self, '_test_paths') or not hasattr(self, '_test_labels'):
-            # Ensure test split exists
             self.setup(stage='test')
         
         if idx < 0 or idx >= len(self._test_paths):
@@ -181,38 +213,11 @@ class DAiSEEDataModule(L.LightningDataModule):
         path = self._test_paths[idx]
         label = self._test_labels[idx]
         
-        # Load and transform using the same logic as ImagePathDataset
-        from PIL import Image
+        # Load and transform
         image = Image.open(path).convert('RGB')
-        image = self.test_transform(image)  # Apply test-time transform (normalize, etc.)
+        image = self.test_transform(image)
         
         return image, label
-
-    
-    def _convert_to_binary(self, labels):
-        """
-        Convert multi-class labels to binary
-        
-        Args:
-            labels: List of original class labels (0-3)
-            
-        Returns:
-            List of binary labels (0 or 1)
-        """
-        if self.binary_mapping == 'c0_vs_rest':
-            # Class 0 (not_confused) = 0, rest (confused states) = 1
-            return [0 if label == 0 else 1 for label in labels]
-        
-        elif self.binary_mapping == 'custom':
-            if self.binary_class_map is None:
-                raise ValueError("binary_mapping='custom' requires binary_class_map")
-            return [self.binary_class_map.get(label, label) for label in labels]
-        
-        else:
-            raise ValueError(
-                f"Unknown binary_mapping: {self.binary_mapping}. "
-                f"Use 'c0_vs_rest' or 'custom'"
-            )
     
     def train_dataloader(self):
         return DataLoader(

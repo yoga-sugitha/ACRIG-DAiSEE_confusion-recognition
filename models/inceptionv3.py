@@ -12,7 +12,7 @@ class InceptionV3(nn.Module):
         # Custom classifier head
         self.fc = nn.Sequential(
             nn.Dropout(p=dropout),
-            nn.Linear(2048, c_t),           # InceptionV3's feature dim is 2048
+            nn.Linear(2048, c_t),
             act_fn(),
             nn.Dropout(p=dropout),
             nn.Linear(c_t, c_t // 2),

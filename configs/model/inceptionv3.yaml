@@ -2,3 +2,5 @@ name: inceptionv3
 hparams:
   c_t: 512
   dropout: 0.2
+
+_img_size: 299 # to override the existing img size for inception

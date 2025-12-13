@@ -53,6 +53,8 @@ def train(cfg: DictConfig):
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     # NOTE: Lightning DataModule
+    if "_img_size" in cfg.model:
+        cfg.data.hparams.img_size=cfg.model.img_size
     data_cls = DATASET_REGISTRY.get(cfg.data.name)    
     data_module = data_cls(**OmegaConf.to_container(cfg.data.hparams, resolve=True))
     data_module.setup(stage='fit')

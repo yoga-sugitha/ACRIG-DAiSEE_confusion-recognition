@@ -1,18 +1,34 @@
 import torch
 import torch.nn as nn
-from torchvision import models
+from torchvision.models import inception_v3, Inception_V3_Weights
+from torchvision.models.inception import InceptionOutputs
 
 class InceptionV3(nn.Module):
-    def __init__(self, num_classes=2, c_t=512, act_fn=nn.ReLU, dropout=0.2):
+    def __init__(
+        self, 
+        num_classes=2, 
+        pretrained=True,
+        c_t=512,
+        dropout=0.2,
+        act_fn=nn.ReLU
+    ):
         super().__init__()
-        # Load pretrained InceptionV3 with aux_logits disabled
-        self.backbone = models.inception_v3(weights='DEFAULT', aux_logits=False, transform_input=False)
         
-        # Replace the fully connected layer with Identity to extract features
+        # Load backbone
+        if pretrained:
+            weights = Inception_V3_Weights.DEFAULT
+            self.backbone = inception_v3(weights=weights, aux_logits=True)
+        else:
+            self.backbone = inception_v3(aux_logits=False)
+        
+        # Freeze original fc (optional, but good practice)
+        # We won't use it — we'll replace the whole head
+        
+        # Remove original fc — set to Identity so backbone returns features
         self.backbone.fc = nn.Identity()
         
-        # Custom classifier head
-        self.fc = nn.Sequential(
+        # Build your custom head
+        self.classifier = nn.Sequential(
             nn.Dropout(p=dropout),
             nn.Linear(2048, c_t),
             act_fn(),
@@ -24,13 +40,11 @@ class InceptionV3(nn.Module):
         )
 
     def forward(self, x):
-        # Extract features from backbone
-        x = self.backbone(x)
+        features = self.backbone(x)
         
-        # Handle InceptionOutputs if it still occurs
-        if isinstance(x, tuple):
-            x = x[0]  # Take main output, ignore aux
+        # Handle InceptionOutputs (from aux_logits=True)
+        if isinstance(features, InceptionOutputs):
+            features = features.logits  # main output is in .logits
         
-        # Pass through custom classifier
-        x = self.fc(x)
-        return x
+        # Now pass through your custom classifier
+        return self.classifier(features)

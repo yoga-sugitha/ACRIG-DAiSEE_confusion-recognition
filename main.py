@@ -54,7 +54,7 @@ def train(cfg: DictConfig):
 
     # NOTE: Lightning DataModule
     if "_img_size" in cfg.model:
-        cfg.data.hparams.img_size=cfg.model.img_size
+        cfg.data.hparams.img_size=cfg.model._img_size
     data_cls = DATASET_REGISTRY.get(cfg.data.name)    
     data_module = data_cls(**OmegaConf.to_container(cfg.data.hparams, resolve=True))
     data_module.setup(stage='fit')

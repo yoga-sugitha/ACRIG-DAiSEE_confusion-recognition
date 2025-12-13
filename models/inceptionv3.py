@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torchvision.models import inception_v3, Inception_V3_Weights
-from torchvision.models.inception import InceptionOutputs
 
 class InceptionV3(nn.Module):
     def __init__(
@@ -14,21 +13,19 @@ class InceptionV3(nn.Module):
     ):
         super().__init__()
         
-        # Load backbone
         if pretrained:
             weights = Inception_V3_Weights.DEFAULT
+            # Must set aux_logits=True to load pretrained weights
             self.backbone = inception_v3(weights=weights, aux_logits=True)
+            # Now, disable the auxiliary classifier manually
+            self.backbone.aux_logits = False
+            self.backbone.AuxLogits = None  # Optional: remove to save memory
         else:
+            # For non-pretrained, you can safely use aux_logits=False
             self.backbone = inception_v3(aux_logits=False)
         
-        # Freeze original fc (optional, but good practice)
-        # We won't use it — we'll replace the whole head
-        
-        # Remove original fc — set to Identity so backbone returns features
-        self.backbone.fc = nn.Identity()
-        
-        # Build your custom head
-        self.classifier = nn.Sequential(
+        # Replace the main classifier (fc)
+        self.backbone.fc = nn.Sequential(
             nn.Dropout(p=dropout),
             nn.Linear(2048, c_t),
             act_fn(),
@@ -40,11 +37,8 @@ class InceptionV3(nn.Module):
         )
 
     def forward(self, x):
-        features = self.backbone(x)
-        
-        # Handle InceptionOutputs (from aux_logits=True)
-        if isinstance(features, InceptionOutputs):
-            features = features.logits  # main output is in .logits
-        
-        # Now pass through your custom classifier
-        return self.classifier(features)
+        # Forward pass — now returns only main logits
+        out = self.backbone(x)
+        # If aux_logits were enabled, it would return InceptionOutputs,
+        # but we disabled it, so it returns just a tensor
+        return out

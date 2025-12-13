@@ -4,9 +4,7 @@ Model factory for creating different architectures
 import torch.nn as nn
 from typing import Dict, Any
 from .effnetb0 import EfficientNetB0
-from  .inceptionv3 import InceptionV3
-from .pretrained import create_pretrained_resnet
-
+from .inceptionv3 import InceptionV3
 def create_model(model_name: str, model_hparams: Dict[str, Any]) -> nn.Module:
     """
     Factory function to create models based on configuration

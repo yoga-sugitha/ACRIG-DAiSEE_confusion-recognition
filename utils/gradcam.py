@@ -13,9 +13,15 @@ import wandb
 def get_target_layer(model: nn.Module) -> nn.Module:
     """Try common patterns, then find last Conv2D."""
     
-    # 1. Your EfficientNetB0 wrapper
-    if hasattr(model, 'backbone') and hasattr(model.backbone, 'features'):
-        return model.backbone.features[-1]
+    # 1. Your InceptionV3 wrapper
+    if hasattr(model, 'backbone'):
+        # Check if it's Inception-v3
+        if hasattr(model.backbone, 'Mixed_7c'):
+            return model.backbone.Mixed_7c
+        
+        # Your EfficientNetB0 wrapper
+        if hasattr(model.backbone, 'features'):
+            return model.backbone.features[-1]
     
     # 2. Standard torchvision models
     if hasattr(model, 'features'):  # EfficientNet, DenseNet
@@ -25,9 +31,10 @@ def get_target_layer(model: nn.Module) -> nn.Module:
     
     # 3. Generic fallback: find last Conv2D
     last_conv = None
-    for module in model.modules():
+    for module in reversed(list(model.modules())):  # reversed for "last"
         if isinstance(module, nn.Conv2d):
             last_conv = module
+            break  # take the very last one
     
     if last_conv:
         return last_conv

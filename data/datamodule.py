@@ -35,6 +35,7 @@ class DAiSEEDataModule(L.LightningDataModule):
         task_type: str = 'multiclass',
     ):
         super().__init__()
+        # Store parameters only - NO I/O operations!
         self.data_dir = Path(data_dir)
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -42,27 +43,18 @@ class DAiSEEDataModule(L.LightningDataModule):
         self.seed = seed
         self.task_type = task_type.lower()
         
-        # Validate task type
+        # Simple validation (no I/O)
         if self.task_type not in ['binary', 'multiclass']:
             raise ValueError(f"task_type must be 'binary' or 'multiclass', got '{task_type}'")
         
-        # Set num_classes and class_names immediately
+        # Set derived properties
         self.num_classes = 2 if self.task_type == 'binary' else 4
         self.class_names = (
             ['Not Confused', 'Confused'] if self.task_type == 'binary' else
             ['Not Confused', 'Slightly Confused', 'Confused', 'Very Confused']
         )
         
-        # Verify directories exist
-        self.train_dir = self.data_dir / "Train"
-        self.val_dir = self.data_dir / "Validation"
-        self.test_dir = self.data_dir / "Test"
-        
-        for split_dir in [self.train_dir, self.val_dir, self.test_dir]:
-            if not split_dir.exists():
-                raise ValueError(f"Directory not found: {split_dir}")
-        
-        # Define transforms
+        # Define transforms (no I/O)
         self.test_transform = T.Compose([
             T.Resize((img_size, img_size)),
             T.ToTensor(),
@@ -95,7 +87,25 @@ class DAiSEEDataModule(L.LightningDataModule):
         """
         Setup datasets from pre-split directories
         Converts to binary labels if needed (class 0 vs rest)
+        ALL I/O operations happen here!
         """
+        # Verify directories exist (moved from __init__)
+        self.train_dir = self.data_dir / "Train"
+        self.val_dir = self.data_dir / "Validation"
+        self.test_dir = self.data_dir / "Test"
+        
+        # Check that all required directories exist
+        for split_dir, name in [
+            (self.train_dir, "Train"),
+            (self.val_dir, "Validation"),
+            (self.test_dir, "Test")
+        ]:
+            if not split_dir.exists():
+                raise RuntimeError(
+                    f"[DAiSEEDataModule] Missing {name} split at {split_dir}\n"
+                    f"Available dirs: {list(self.data_dir.iterdir())}"
+                )
+        
         # Only create splits once
         if not hasattr(self, '_splits_created'):
             # Load train split

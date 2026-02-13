@@ -229,6 +229,7 @@ class DAiSEEDataModule(L.LightningDataModule):
         
         return image, label
     
+    # NOTE: Persistent workers are set to False due to Kaggle's enviroment limitation
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset, 
@@ -236,7 +237,7 @@ class DAiSEEDataModule(L.LightningDataModule):
             shuffle=True, 
             num_workers=self.num_workers,
             pin_memory=True if self.num_workers > 0 else False,
-            persistent_workers=True if self.num_workers > 0 else False,
+            persistent_workers=False,
         )
 
     def val_dataloader(self):
@@ -246,7 +247,7 @@ class DAiSEEDataModule(L.LightningDataModule):
             shuffle=False, 
             num_workers=self.num_workers,
             pin_memory=True if self.num_workers > 0 else False,
-            persistent_workers=True if self.num_workers > 0 else False,
+            persistent_workers=False,
         )
 
     def test_dataloader(self):
@@ -256,5 +257,5 @@ class DAiSEEDataModule(L.LightningDataModule):
             shuffle=False, 
             num_workers=self.num_workers,
             pin_memory=True if self.num_workers > 0 else False,
-            persistent_workers=True if self.num_workers > 0 else False,
+            persistent_workers=False,
         )
